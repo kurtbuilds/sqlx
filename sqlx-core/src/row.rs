@@ -3,6 +3,7 @@ use crate::database::Database;
 use crate::decode::Decode;
 use crate::error::{mismatched_types, Error};
 
+use crate::sql_traits::{DatabaseSqlTypes, Sql, SqlDecode};
 use crate::type_checking::TypeChecking;
 use crate::type_info::TypeInfo;
 use crate::types::Type;
@@ -74,6 +75,21 @@ pub trait Row: Unpin + Send + Sync + 'static {
         self.try_get::<T, I>(index).unwrap()
     }
 
+    /// Index into the database row and decode a semantic SQL value.
+    ///
+    /// This is an experimental bridge for crates that implement
+    /// [`SqlDecode`] without depending on a concrete SQLx driver crate.
+    #[inline]
+    #[track_caller]
+    fn get_sql<'r, T, I>(&'r self, index: I) -> T
+    where
+        I: ColumnIndex<Self>,
+        T: SqlDecode,
+        Self::Database: DatabaseSqlTypes,
+    {
+        self.try_get_sql::<T, I>(index).unwrap()
+    }
+
     /// Index into the database row and decode a single value.
     ///
     /// Unlike [`get`](Self::get), this method does not check that the type
@@ -131,6 +147,19 @@ pub trait Row: Unpin + Send + Sync + 'static {
             index: format!("{index:?}"),
             source,
         })
+    }
+
+    /// Index into the database row and decode a semantic SQL value.
+    ///
+    /// This is an experimental bridge for crates that implement
+    /// [`SqlDecode`] without depending on a concrete SQLx driver crate.
+    fn try_get_sql<'r, T, I>(&'r self, index: I) -> Result<T, Error>
+    where
+        I: ColumnIndex<Self>,
+        T: SqlDecode,
+        Self::Database: DatabaseSqlTypes,
+    {
+        self.try_get::<Sql<T>, I>(index).map(|value| value.0)
     }
 
     /// Index into the database row and decode a single value.

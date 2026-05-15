@@ -10,6 +10,7 @@ use crate::encode::Encode;
 use crate::error::{BoxDynError, Error};
 use crate::executor::{Execute, Executor};
 use crate::sql_str::{SqlSafeStr, SqlStr};
+use crate::sql_traits::{DatabaseSqlTypes, Sql, SqlEncode};
 use crate::statement::Statement;
 use crate::types::Type;
 
@@ -100,6 +101,18 @@ impl<DB: Database> Query<'_, DB, <DB as Database>::Arguments> {
         self
     }
 
+    /// Bind a value described by the semantic SQL type traits.
+    ///
+    /// This is an experimental bridge for crates that implement
+    /// [`SqlEncode`] without depending on a concrete SQLx driver crate.
+    pub fn bind_sql<T>(self, value: T) -> Self
+    where
+        T: SqlEncode,
+        DB: DatabaseSqlTypes,
+    {
+        self.bind(Sql(value))
+    }
+
     /// Like [`Query::bind`] but immediately returns an error if encoding a value failed.
     pub fn try_bind<'t, T: Encode<'t, DB> + Type<DB>>(
         &mut self,
@@ -108,6 +121,15 @@ impl<DB: Database> Query<'_, DB, <DB as Database>::Arguments> {
         let arguments = self.get_arguments()?;
 
         arguments.add(value)
+    }
+
+    /// Like [`Query::bind_sql`] but immediately returns an error if encoding a value failed.
+    pub fn try_bind_sql<T>(&mut self, value: T) -> Result<(), BoxDynError>
+    where
+        T: SqlEncode,
+        DB: DatabaseSqlTypes,
+    {
+        self.try_bind(Sql(value))
     }
 
     fn get_arguments(&mut self) -> Result<&mut DB::Arguments, BoxDynError> {

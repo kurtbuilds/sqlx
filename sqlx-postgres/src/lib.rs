@@ -19,6 +19,7 @@ mod message;
 mod options;
 mod query_result;
 mod row;
+mod sql_traits;
 mod statement;
 mod transaction;
 mod type_checking;
