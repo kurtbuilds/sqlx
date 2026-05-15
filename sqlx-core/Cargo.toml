@@ -46,6 +46,8 @@ sqlx-toml = ["serde", "toml/parse"]
 _unstable-doc = ["sqlx-toml"]
 
 [dependencies]
+sqlx-traits = { workspace = true }
+
 # Runtimes
 async-global-executor = { workspace = true, optional = true }
 async-std = { workspace = true, optional = true }
